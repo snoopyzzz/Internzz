@@ -58,3 +58,28 @@
 <p>1、设计程序完成全部功能；
 <p>2、提供设计文档，简单描述设计关键点。
 
+<h2>设计文档：</h2>
+<p>为了能更好的实现评级功能，我在题目原有的数据库上加了点改动。
+<p>员工表增加了一个升职日期字段；并增添了一张新表（评级表）
+ 
+<p>设计思路：
+	<p>增加评级表（Rating）是因为题目要求可以增加新的考核项，即一个部门可能会有多种不同的升职条件。于是我把评级表设为多的一方（previous_level：在这个级别以上的员工使用这条标准，requirement：升职要求（单位：天数）， department_id作为外键）。
+	<p>增加升职日期字段是因为，我在最开始做这个功能的时候，hql语句是：
+from Employee a where ( CURRENT_DATE() - a.entry_time ) > ANY"
+		+ "(select b.requirements from Rating b where a.department.id = b.department.id)"。
+<p>然后我发现，这样的话每天都会对升级了的人再进行升级，因为entry_time是固定不变的，所以如果升职了一次后，CURRENT_DATE() - a.entry_time会永远大于升职要求。于是我增加了一个升职日期字段，即升职当天的日期，默认初始值为入职日期。于是接下来我使用这条hql语句：
+from Employee a where ( CURRENT_DATE() - a.promoted_time ) > ANY"
+		+ "(select b.requirements from Rating b where a.department.id = b.department.id)
+<p>然后再对筛选出来的员工们进行level字段+1，及设置promoted_time字段为当前日期。这样就相当于，升职时把promoted_time值清零，就不会出现之前的那种情况了。
+<p>前端我用setInterval设置了一个60秒的计时器，判断条件当时间为1点时，执行升职任务函数。并将升职人员的信息显示在前台，如果当天无人升职则显示无人升职。
+（遗憾的是，我到现在还没想出来怎么操作判断不同级别的人参照不同的升职条件。。。。。。希望之后面试官老师能够给我点提示，感激不尽。）
+
+<p>第二个功能的话，我在id=text1 标签上设置了 onblur="checkDepID();getItem();"。
+<p>checkDepID()通过ajax检测是否输入了正确的部门编号，如果输出的部门编号不存在的话会显示“没有该部门”。
+<p>getItem()是获取了id=text1标签输入的内容，然后返回后台查找相应部门的员工，并通过json格式返回。返回成功的话会调用display(data)函数，将返回的数据通过html拼接输出在div id= allEmployeeContent上。
+<p>但是测试的时候发现了尴尬的一个地方。如果输出了不存在的部门ID，虽然页面正确显示了“没有该部门”，程序也仍然在跑。但是控制台在报错，原因是因为display(data)函数仍在输出返回的data数据，但是这个数据里面是空的，报错显示我角标越界了。
+<p>之后想了一个办法，即加一个button控制该text。如果没有这个部门的话，给button设置一个disabled，当data有值时再取消disabled。
+<p>不过这个办法好像没有正面解决这个问题，所以我暂时还没有这样修改，还在想有没有别的方法。
+<p>实现RESTful风格我使用在了后面我加了两个功能上了。一个是按姓名模糊查找，一个是按部门编号查找（这个用的EL表达式显示）。
+
+  
